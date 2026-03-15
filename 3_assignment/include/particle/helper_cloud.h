@@ -3,7 +3,6 @@
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/common/common.h>
-#include "particle/CircleFit.h"
 
 int nReflectors=8;
 /**
@@ -31,41 +30,20 @@ pcl::PointCloud<pcl::PointXYZI> extractReflectors(const pcl::PointCloud<pcl::Poi
     ec.setInputCloud(cloudReflector.makeShared());
     std::vector<pcl::PointIndices> cluster_indices;
     ec.extract(cluster_indices);
-    int pp=0;
-    // for each cluster perform circle fitting
-    for(auto& idx : cluster_indices){
-        // extract points
-        std::vector<float> xComponent, yComponent;
-        for(auto& j : idx.indices){
-            xComponent.push_back(cloudReflector.at(j).x);
-            yComponent.push_back(cloudReflector.at(j).y);
+
+    //calcola centro dei punti luminosi facendo media matematica
+    for (const auto& single_cluster : cluster_indices) { // Usa single_cluster
+        float x = 0, y = 0;
+        for (int idx : single_cluster.indices) { // Somma i punti del cluster attuale
+            x += cloudReflector.points[idx].x;
+            y += cloudReflector.points[idx].y;
         }
-
-        //Circle fitting
-        Circle circle;
-        circle = CircleFitByCeres(xComponent, yComponent, 0.04);
-
-        float xAvg = 0.0f;
-        for(auto& x : xComponent)
-            xAvg += x;
-        xAvg /= xComponent.size();
-        float yAvg = 0.0f;
-        for(auto& y : yComponent)
-            yAvg += y;
-        yAvg /= yComponent.size();
-
-        if(sqrt(xAvg*xAvg + yAvg*yAvg) > sqrt(circle.x*circle.x + circle.y*circle.y))
-            continue; // skip reflector, circle center is nearest that average point
-
-        pcl::PointXYZI pt;
-        pt.x = circle.x;
-        pt.y = circle.y;
-        pt.z = 0.0f;
-        reflectorCenter.push_back(pt);
-        if(pp>nReflectors)
-            break;
-        pp++;
-    
+        pcl::PointXYZI center;
+        center.x = x / single_cluster.indices.size(); 
+        center.y = y / single_cluster.indices.size();
+        center.z = 0;
+        center.intensity = 1.0;
+        reflectorCenter.push_back(center);
     }
     return reflectorCenter;
 }

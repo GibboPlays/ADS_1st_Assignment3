@@ -18,7 +18,7 @@ with open('res.txt','r') as file:
         y.append(float(word[1]))  
         time.append(float(word[2]))
 
-with open('pf_slam.txt','r') as file:
+with open('../pf_slam.txt','r') as file:
     # reading each line    
     for line in file:
         # reading each word        
